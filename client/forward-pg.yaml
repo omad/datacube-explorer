@@ -1,0 +1,33 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  labels:
+    app: pg-proxy
+  name: pg-proxy
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: pg-proxy
+  template:
+    metadata:
+      labels:
+        app: pg-proxy
+    spec:
+      containers:
+      - image: tecnativa/tcp-proxy:latest
+        imagePullPolicy: Always
+        env:
+          - name: LISTEN
+            value: ":5432" # The listen address that it will be exposed to.
+          - name: TALK
+            value: "database.local:5432" # Private address of Memorystore.
+        name: pg-proxy
+        resources:
+          requests:
+            cpu: 10m
+            memory: 10m
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      securityContext: {}
+

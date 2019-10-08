@@ -32,7 +32,7 @@ extras_require = {
 }
 
 setup(
-    name="dea-dashboard",
+    name="datacube-explorer",
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
     python_requires=">=3.6",

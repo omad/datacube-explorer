@@ -345,3 +345,12 @@ def product_list_text():
     return Response(
         "\n".join(_model.STORE.list_complete_products()), content_type="text/plain"
     )
+
+from flask_cors import CORS
+
+# enable CORS
+CORS(app, resources={r'/*': {'origins': '*'}})
+
+@app.route('/ping', methods=['GET'])
+def ping_pong():
+    return jsonify('pong!')
