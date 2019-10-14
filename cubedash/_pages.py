@@ -2,19 +2,19 @@ import itertools
 from datetime import datetime, timedelta
 from typing import List, Tuple
 
-import flask
-import structlog
-from flask import Response, abort, redirect, request, url_for
-from werkzeug.datastructures import MultiDict
-
 import cubedash
 import datacube
+import flask
+import structlog
 from cubedash import _audit, _monitoring
 from cubedash._model import ProductWithSummary
 from cubedash.summary import RegionInfo, TimePeriodOverview
 from cubedash.summary._stores import ProductSummary
 from datacube.model import DatasetType, Range
 from datacube.scripts.dataset import build_dataset_info
+from flask import Response, abort, redirect, request, url_for, jsonify
+from flask_cors import CORS
+from werkzeug.datastructures import MultiDict
 
 from . import _api, _dataset, _filters, _model, _platform, _product, _reports, _stac
 from . import _utils as utils
@@ -38,6 +38,9 @@ _HARD_SEARCH_LIMIT = app.config.get("CUBEDASH_HARD_SEARCH_LIMIT", 150)
 if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
     _monitoring.init_app_monitoring()
 
+# enable CORS
+CORS(app, resources={r'/*': {'origins': '*'}})
+
 
 # @app.route('/')
 @app.route("/<product_name>")
@@ -45,7 +48,7 @@ if app.config.get("CUBEDASH_SHOW_PERF_TIMES", False):
 @app.route("/<product_name>/<int:year>/<int:month>")
 @app.route("/<product_name>/<int:year>/<int:month>/<int:day>")
 def overview_page(
-    product_name: str = None, year: int = None, month: int = None, day: int = None
+        product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
     product, product_summary, selected_summary = _load_product(
         product_name, year, month, day
@@ -74,7 +77,7 @@ def overview_page(
 @app.route("/datasets/<product_name>/<int:year>/<int:month>")
 @app.route("/datasets/<product_name>/<int:year>/<int:month>/<int:day>")
 def search_page(
-    product_name: str = None, year: int = None, month: int = None, day: int = None
+        product_name: str = None, year: int = None, month: int = None, day: int = None
 ):
     product, product_summary, selected_summary = _load_product(
         product_name, year, month, day
@@ -144,11 +147,11 @@ def search_page(
 @app.route("/region/<product_name>/<region_code>/<int:year>/<int:month>")
 @app.route("/region/<product_name>/<region_code>/<int:year>/<int:month>/<int:day>")
 def region_page(
-    product_name: str = None,
-    region_code: str = None,
-    year: int = None,
-    month: int = None,
-    day: int = None,
+        product_name: str = None,
+        region_code: str = None,
+        year: int = None,
+        month: int = None,
+        day: int = None,
 ):
     product, product_summary, selected_summary = _load_product(
         product_name, year, month, day
@@ -202,7 +205,7 @@ def timeline_page(product_name: str):
 
 
 def _load_product(
-    product_name, year, month, day
+        product_name, year, month, day
 ) -> Tuple[DatasetType, ProductSummary, TimePeriodOverview]:
     product = None
     if product_name:
@@ -219,8 +222,8 @@ def _load_product(
 def request_wants_json():
     best = request.accept_mimetypes.best_match(["application/json", "text/html"])
     return (
-        best == "application/json"
-        and request.accept_mimetypes[best] > request.accept_mimetypes["text/html"]
+            best == "application/json"
+            and request.accept_mimetypes[best] > request.accept_mimetypes["text/html"]
     )
 
 
@@ -270,8 +273,8 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
         (
             (name or "", list(items))
             for (name, items) in itertools.groupby(
-                sorted(product_summaries, key=key), key=key
-            )
+            sorted(product_summaries, key=key), key=key
+        )
         ),
         # Show largest groups first
         key=lambda k: len(k[1]),
@@ -281,8 +284,8 @@ def _get_grouped_products() -> List[Tuple[str, List[ProductWithSummary]]]:
 
 
 def _merge_singular_groups(
-    grouped_product_summarise: List[Tuple[str, List[ProductWithSummary]]],
-    remainder_group_size=5,
+        grouped_product_summarise: List[Tuple[str, List[ProductWithSummary]]],
+        remainder_group_size=5,
 ) -> List[Tuple[str, List[ProductWithSummary]]]:
     """
     Remove groups with only one member, and place them at the end in batches.
@@ -321,7 +324,7 @@ def chunks(l: List, n: int):
     []
     """
     for i in range(0, len(l), n):
-        yield l[i : i + n]
+        yield l[i: i + n]
 
 
 @app.route("/")
@@ -346,10 +349,6 @@ def product_list_text():
         "\n".join(_model.STORE.list_complete_products()), content_type="text/plain"
     )
 
-from flask_cors import CORS
-
-# enable CORS
-CORS(app, resources={r'/*': {'origins': '*'}})
 
 @app.route('/ping', methods=['GET'])
 def ping_pong():

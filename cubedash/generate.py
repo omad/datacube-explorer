@@ -1,3 +1,11 @@
+"""
+Command line tool to build and update the datacube-explorer specific database tables.
+
+And summary files?
+
+TODO: clear up what goes in the database and what goes on disk
+
+"""
 import multiprocessing
 import sys
 from typing import List, Sequence, Tuple

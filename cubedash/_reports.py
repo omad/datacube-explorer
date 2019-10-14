@@ -1,3 +1,6 @@
+"""
+Define /reports endpoints
+"""
 import logging
 import re
 

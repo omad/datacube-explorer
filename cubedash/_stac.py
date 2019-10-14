@@ -1,3 +1,6 @@
+"""
+Provide /stac and /collections endpoints.
+"""
 import json
 import logging
 from collections import defaultdict
