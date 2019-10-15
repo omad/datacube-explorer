@@ -2,12 +2,12 @@
   <div class="container">
     <div class="row">
       <div class="col-sm-10">
-        <h1>Products Hello</h1>
+        <h1>Products</h1>
         <hr><br><br>
         <table class="table table-hover">
           <thead>
           <tr>
-            <th scope="col">Title2</th>
+            <th scope="col">Title</th>
             <th scope="col">Description</th>
           </tr>
           </thead>
