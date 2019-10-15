@@ -4,7 +4,7 @@
       <router-link :to="{ name: 'productsummary', params: { productid: product.title }}"
         :title="product.description">
         {{ product.title }}</router-link>
-    </li>>
+    </li>
   </ul>
 </template>
 

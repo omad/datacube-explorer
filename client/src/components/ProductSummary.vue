@@ -1,5 +1,6 @@
 <template>
   <div class="container">
+    <div v-if="loading">Loading...</div>
     {{ product }}
   </div>
 </template>
@@ -12,6 +13,7 @@ export default {
   data() {
     return {
       product: undefined,
+      loading: true,
     };
   },
   created() {
@@ -25,6 +27,8 @@ export default {
   },
   methods: {
     fetchData() {
+      this.product = undefined;
+      this.loading = true;
       const path = `http://localhost:5000/collections/${this.$route.params.productid}`;
       axios.get(path)
         .then((res) => {
@@ -33,6 +37,9 @@ export default {
         .catch((error) => {
           // eslint-disable-next-line
           console.error(error);
+        })
+        .finally(() => {
+          this.loading = false;
         });
     },
   },
