@@ -1,28 +1,11 @@
 <template>
-  <div class="container">
-    <div class="row">
-      <div class="col-sm-10">
-        <h1>Products</h1>
-        <hr><br><br>
-        <table class="table table-hover">
-          <thead>
-          <tr>
-            <th scope="col">Title</th>
-            <th scope="col">Description</th>
-          </tr>
-          </thead>
-          <tbody>
-          <tr v-for="(product, index) in products" :key="index">
-            <td><router-link :to="{ name: 'productsummary', params: { productid: product.title }}">
-              {{ product.title }}</router-link>
-            </td>
-            <td><router-link to="ping">{{ product.description }}</router-link></td>
-          </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
+  <ul>
+    <li v-for="(product, index) in products" :key="index">
+      <router-link :to="{ name: 'productsummary', params: { productid: product.title }}"
+        :title="product.description">
+        {{ product.title }}</router-link>
+    </li>>
+  </ul>
 </template>
 
 <script>
@@ -44,7 +27,7 @@ export default {
         })
         .catch((error) => {
           // eslint-disable-next-line
-                    console.error(error);
+          console.error(error);
         });
     },
   },
