@@ -58,6 +58,10 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
 
 COPY --link . /build/
 
+# Restore any tracked files omitted by .dockerignore so setuptools_scm sees a clean tree.
+RUN git config --global --add safe.directory /build \
+    && git -C /build reset --hard HEAD
+
 ARG ENVIRONMENT=deployment
 # The deployment image should not have binaries that aid an attacker to get their
 # rootkit in place, and uv downloads over the network. There is no conditional
