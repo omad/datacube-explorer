@@ -29,7 +29,7 @@ jobs:
   docker:
     timeout-minutes: 35
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' || github.event_name == 'release'
+    if: github.ref == 'refs/heads/develop' || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: Checkout git
@@ -44,18 +44,16 @@ jobs:
           echo "UNSTABLE_TAG=$UNSTABLE_TAG" >> $GITHUB_ENV
 
       - name: Build and Push unstable + latest Docker image tag
-        if: github.event_name != 'release'
+        if: github.event_name != 'release' || github.event_name == 'workflow_dispatch' 
         uses: whoan/docker-build-with-cache-action@d8d3ad518e7ac382b880720d0751815e656fe032 # v8.1.0
         with:
           image_name: ${{ env.IMAGE_NAME }}
-          username: gadockersvc
           image_tag: ${{ env.UNSTABLE_TAG }},latest
-          password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
 
       # This section is for releases
       - name: Get and log tag for this build if it exists
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         run: |
           set -ex
           RELEASE=$(git describe --abbrev=0 --tags)
@@ -63,19 +61,8 @@ jobs:
 
       - name: Build and Push release if we have a tag
         uses: whoan/docker-build-with-cache-action@d8d3ad518e7ac382b880720d0751815e656fe032 # v8.1.0
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || github.event_name == 'workflow_dispatch'
         with:
           image_name: ${{ env.IMAGE_NAME }}
           image_tag: ${{ env.RELEASE }}
-          username: gadockersvc
-          password: "${{ secrets.DockerPassword }}"
           build_extra_args: "--build-arg=ENVIRONMENT=deployment"
-
-      - name: Update Docker Hub Description
-        uses: peter-evans/dockerhub-description@1b9a80c056b620d92cedb9d9b5a223409c68ddfa # v5.0.0
-        with:
-          username: gadockersvc
-          password: ${{ secrets.DockerPassword }}
-          repository: ${{ env.IMAGE_NAME }}
-          readme-filepath: README.md
-          short-description: Open Data Cube Explorer Image
