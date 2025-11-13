@@ -25,6 +25,11 @@ dist
 Makefile
 pylintrc
 
+# VCS Directories
+.git
+.jj
+
+
 # Test and coverage reports
 **/htmlcov
 **/.tox

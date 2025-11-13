@@ -7,30 +7,9 @@ LABEL org.opencontainers.image.licences="Apache-2.0"
 
 ENV LC_ALL=C.UTF-8 \
     LANG=C.UTF-8 \
-    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1
 
-# Add login-script for UID/GID-remapping.
-COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
-
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    export DEBIAN_FRONTEND=noninteractive \
-    && apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
-            gosu \
-            libpq5 \
-            tini \
-    && mkdir /app \
-    && chown ubuntu:ubuntu /app
-
-
-# This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
-FROM ghcr.io/astral-sh/uv:0.9.9@sha256:f6e3549ed287fee0ddde2460a2a74a2d74366f84b04aaa34c1f19fec40da8652 AS uv
-
-FROM base AS builder
 
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
@@ -48,24 +27,32 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
         libudunits2-dev \
         # For psycopg2.
         libpq-dev \
-        python3-dev
+        python3-dev \
+    && mkdir /app \
+    && chown ubuntu:ubuntu /app
 
-ENV UV_COMPILE_BYTECODE=0 \
+# This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
+FROM ghcr.io/astral-sh/uv:0.9.9@sha256:f6e3549ed287fee0ddde2460a2a74a2d74366f84b04aaa34c1f19fec40da8652 AS uv
+
+ENV UV_COMPILE_BYTECODE=1 \
     UV_LINK_MODE=copy \
     UV_PROJECT_ENVIRONMENT=/app \
     UV_PYTHON_DOWNLOADS=never \
     UV_PYTHON=python3.12
 
-WORKDIR /build
+FROM base AS builder
 
-COPY --link --from=uv /uv /uvx /usr/local/bin/
+WORKDIR /build
 
 COPY --link pyproject.toml uv.lock /build/
 
-# Use a separate cache volume for uv on opendatacube projects, so it is
-# not inseparable from pip/poetry/npm/etc. cache stored in /root/.cache.
+# Install Dependencies into venv in /app
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
-    uv sync --frozen --extra=deployment --no-install-project \
+    --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    uv sync --frozen \
+      --extra=deployment \
+      --no-install-project \
+      --no-group dev \
       --no-binary-package fiona \
       --no-binary-package netcdf4 \
       --no-binary-package psycopg2 \
@@ -74,23 +61,27 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
 
 COPY --link . /build/
 
-# Install dev dependencies, and the project itself in editable mode
-FROM builder as dev
+# Install dev dependencies, and the project itself in editable mode from /build
+FROM builder AS dev
 
+COPY --link --from=uv /uv /uvx /usr/local/bin/
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
-    uv sync --frozen --extra=test --no-editable
+    uv sync --frozen --all-extras --all-groups
 
 
-FROM base as prod
+FROM base AS prod
 
 COPY --from=builder --link --chown=1000:1000 /app /app
 
+RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    --
+
 # Configure user
 WORKDIR "/home/ubuntu"
+USER ubuntu:ubuntu
 
 ENV PATH=/app/bin:$PATH
 
-ENTRYPOINT ["/usr/local/bin/remap-user.sh"]
 # This is for prod, and serves as docs. It's usually overwritten
 CMD ["gunicorn", \
      "-b", \
