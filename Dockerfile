@@ -31,14 +31,9 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     && mkdir /app \
     && chown ubuntu:ubuntu /app
 
+
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
 FROM ghcr.io/astral-sh/uv:0.9.9@sha256:f6e3549ed287fee0ddde2460a2a74a2d74366f84b04aaa34c1f19fec40da8652 AS uv
-
-ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    UV_PROJECT_ENVIRONMENT=/app \
-    UV_PYTHON_DOWNLOADS=never \
-    UV_PYTHON=python3.12
 
 FROM base AS builder
 
@@ -49,6 +44,8 @@ COPY --link pyproject.toml uv.lock /build/
 # Install Dependencies into venv in /app
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    export SETUPTOOLS_SCM_DEBUG=1 && \
+    echo $SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACUBE_EXPLORER && \
     uv sync --frozen \
       --extra=deployment \
       --no-install-project \
@@ -64,17 +61,40 @@ COPY --link . /build/
 # Install dev dependencies, and the project itself in editable mode from /build
 FROM builder AS dev
 
+ARG DATACUBE_EXPLORER_VERSION=0.0.0.dev0
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PYTHON=python3.12 \
+    SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACUBE_EXPLORER=$DATACUBE_EXPLORER_VERSION
 COPY --link --from=uv /uv /uvx /usr/local/bin/
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
     uv sync --frozen --all-extras --all-groups
 
 
-FROM base AS prod
+FROM builder AS prod
 
 COPY --from=builder --link --chown=1000:1000 /app /app
 
-RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
-    --
+ARG DATACUBE_EXPLORER_VERSION=0.0.0.dev0
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy \
+    UV_PROJECT_ENVIRONMENT=/app \
+    UV_PYTHON_DOWNLOADS=never \
+    UV_PYTHON=python3.12 \
+    SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACUBE_EXPLORER=$DATACUBE_EXPLORER_VERSION
+ARG FOO=bar
+RUN set -e; \
+    if [ "${SETUPTOOLS_SCM_PRETEND_VERSION_FOR_DATACUBE_EXPLORER}" = "0.0.0.dev0" ]; then \
+        echo "To Build a Production Datacube Explorer Image either use 'make docker' or" && \
+        echo 'specify `docker build --arg DATACUBE_EXPLORER_VERSION=$(uvx setuptools-scm)` as part ' && \
+        echo "of the docker build options." && \
+        exit 1; \
+    fi
+
+# RUN --mount=from=ghcr.io/astral-sh/uv,source=/uv,target=/bin/uv \
+    
 
 # Configure user
 WORKDIR "/home/ubuntu"
