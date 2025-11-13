@@ -11,6 +11,22 @@ ENV LC_ALL=C.UTF-8 \
     PYTHONFAULTHANDLER=1 \
     PYTHONUNBUFFERED=1
 
+# Add login-script for UID/GID-remapping.
+COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
+
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    export DEBIAN_FRONTEND=noninteractive \
+    && apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+            gosu \
+            libpq5 \
+            tini \
+    && mkdir /app \
+    && chown ubuntu:ubuntu /app
+
+
 # This cannot be inlined below (e.g., COPY --from=...) because Dependabot does not support that syntax yet
 FROM ghcr.io/astral-sh/uv:0.9.9@sha256:f6e3549ed287fee0ddde2460a2a74a2d74366f84b04aaa34c1f19fec40da8652 AS uv
 
@@ -58,44 +74,14 @@ RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
 
 COPY --link . /build/
 
-ARG ENVIRONMENT=deployment
-# The deployment image should not have binaries that aid an attacker to get their
-# rootkit in place, and uv downloads over the network. There is no conditional
-# copy in Docker, so truncate the uv binaries to 0 bytes to render them harmless
-# in the resulting deployment image.
+# Install dev dependencies, and the project itself in editable mode
+FROM builder as dev
+
 RUN --mount=type=cache,id=opendatacube-uv-cache,target=/root/.cache \
-    EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "--extra=deployment --no-dev") || \
-                 echo "--extra=test") \
-    && uv sync --frozen $EXTRAS --no-editable \
-    && ([ "$ENVIRONMENT" != "deployment" ] || \
-        (chmod 644 /usr/local/bin/uv* && \
-         echo "" > /usr/local/bin/uv && \
-         echo "" > /usr/local/bin/uvx))
+    uv sync --frozen --extra=test --no-editable
 
-FROM base
 
-# Add login-script for UID/GID-remapping.
-COPY --chown=root:root --link docker/files/remap-user.sh /usr/local/bin/remap-user.sh
-
-ARG ENVIRONMENT=deployment
-RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    export DEBIAN_FRONTEND=noninteractive \
-    && EXTRAS=$( ([ "$ENVIRONMENT" = "deployment" ] && echo "") || \
-                 echo "git") \
-    && apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
-            $EXTRAS \
-            gosu \
-            libpq5 \
-            tini \
-    && mkdir /app \
-    && chown ubuntu:ubuntu /app
-
-# In the "deployment" build, these `uv` binaries will be 0 bytes.
-# In the "test" build they're the actual `uv` tools.
-COPY --from=builder --link /usr/local/bin/uv* /usr/local/bin/
+FROM base as prod
 
 COPY --from=builder --link --chown=1000:1000 /app /app
 

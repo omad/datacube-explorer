@@ -38,43 +38,7 @@ def postgresql_server():
     # If we're running inside docker already, don't attempt to start a container!
     # Hopefully we're using the `with-test-db` script and can use *that* database.
     # I think this may be copypasta from odc-tools
-    if "CUBEDASH_BYPASS_DOCKER" in os.environ or (
-        Path("/.dockerenv").exists()
-        and ("ODC_DEFAULT_DB_URL" in os.environ or "ODC_POSTGIS_DB_URL" in os.environ)
-    ):
-        yield GET_DB_FROM_ENV
-    else:
-        client = docker.from_env()
-        container = client.containers.run(
-            "postgis/postgis:16-3.4",
-            auto_remove=True,
-            remove=True,
-            detach=True,
-            environment={
-                "POSTGRES_PASSWORD": "badpassword",
-                "POSTGRES_USER": "explorer_test",
-            },
-            ports={"5432/tcp": None},
-        )
-        try:
-            while not container.attrs["NetworkSettings"]["Ports"]:
-                time.sleep(1)
-                container.reload()
-            host_port = container.attrs["NetworkSettings"]["Ports"]["5432/tcp"][0][
-                "HostPort"
-            ]
-            # From the documentation for the postgres docker image. The value of POSTGRES_USER
-            # is used for both the user and the default database.
-            yield {
-                "db_hostname": "127.0.0.1",
-                "db_username": "explorer_test",
-                "db_port": host_port,
-                "db_database": "explorer_test",
-                "db_password": "badpassword",
-                "index_driver": "default",
-            }
-        finally:
-            container.remove(v=True, force=True)
+    yield GET_DB_FROM_ENV
 
 
 @pytest.fixture(scope="module")

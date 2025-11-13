@@ -1,0 +1,14 @@
+{
+	"name": "Datacube Explorer",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "explorer",
+	"workspaceFolder": "/code",
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance"
+			]
+		}
+	}
+}

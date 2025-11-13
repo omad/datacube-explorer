@@ -69,10 +69,10 @@ clean:  ## Clean all working/temporary files
 .PHONY: up build schema index
 
 # DOCKER STUFF
-up: ## Start server using Docker
+up: ## Start dev server using Docker
 	docker compose up --quiet-pull
 
-up-d: ## Start server using Docker in background
+up-d: ## Start dev server using Docker in background
 	docker compose up -d --wait --quiet-pull
 
 build: ## Build the dev Docker image
@@ -87,7 +87,7 @@ build-prod: ## Build the prod Docker image
 		--file docker-compose.yml \
 		build
 
-up-prod: ## Start using the prod Docker image
+up-prod: ## Start prod server using the prod Docker image
 	docker compose \
 		--file docker-compose.yml \
 		up -d --wait --quiet-pull

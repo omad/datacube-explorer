@@ -3,16 +3,15 @@ services:
   explorer:
     build:
       context: .
-      args:
-        ENVIRONMENT: deployment
-    image: ghcr.io/opendatacube/explorer:tests
+      target: prod
+    image: ghcr.io/opendatacube/explorer:prod
     ports:
       - "80:8080"
     environment:
       - LOCAL_UID=${LOCAL_UID:-1000}
       - LOCAL_GID=${LOCAL_GID:-1000}
       # - DB_HOSTNAME=host.docker.internal
-      - POSTGRES_HOSTNAME=postgres
+      - POSTG-HOSTNAME=postgres
       - PGPORT=35433
       - POSTGRES_USER=opendatacube
       - POSTGRES_PASSWORD=opendatacubepassword
@@ -21,13 +20,11 @@ services:
       - ODC_POSTGIS_INDEX_DRIVER=postgis
       - ODC_DEFAULT_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:35433/opendatacube
       - ODC_POSTGIS_DB_URL=postgresql://opendatacube:opendatacubepassword@postgres:35433/opendatacube
-      - FLASK_ENV=development
+      - FLASK_ENV=production
       - FLASK_APP=cubedash
-      - FLASK_DEBUG=1
+      - FLASK_DEBUG=0
       - CUBEDASH_DEFAULT_TIMEZONE=Australia/Darwin
       # - VIRTUAL_HOST=datacube.explorer
-    tty: true
-    stdin_open: true
     depends_on:
       - postgres
 
@@ -54,16 +51,3 @@ services:
       timeout: 45s
       interval: 10s
       retries: 10
-
-  # Needed for testing HTTPS
-  # nginx-proxy:
-  #   image: jwilder/nginx-proxy
-  #   container_name: nginx-proxy
-  #   ports:
-  #     - "5000:80"
-  #     - "443:443"
-  #   volumes:
-  #     - /var/run/docker.sock:/tmp/docker.sock:ro
-  #     - ./certs:/etc/nginx/certs
-  #   depends_on:
-  #     - explorer

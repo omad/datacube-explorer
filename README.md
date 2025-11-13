@@ -250,26 +250,38 @@ If you created your datacube without permissions, a stand-alone creator of the a
 role is available as a prerequisite in the same [roles](cubedash/summary/roles)
 directory.
 
-## Docker for Development and running tests
+## Docker Development Environment
 
-You need to have Docker and Docker Compose installed on your system.
+A Docker-based development environment is provided to simplify setup and ensure consistency.
 
-To create your environment, run `make up` or `docker-compose up`.
+### Quick Start
 
-You need an ODC database, so you'll need to refer to the [ODC docs](https://datacube-core.readthedocs.io/en/latest/) for help on indexing, but you can create the database by running `make initdb` or `docker-compose exec explorer datacube system init`. (This is not enough, you still need to add a product and index datasets.)
+1.  **Install Docker and Docker Compose.**
+2.  **Build the development image:** `make build`
+3.  **Start the services:** `make up`
+4.  **Initialise the ODC database:** `make init-odc`
+5.  **Generate Explorer summaries:** `make schema` and then `make index`
+6.  The application will be available at [http://localhost:80](http://localhost:80).
 
-When you have some ODC data indexed, you can run `make index` to create the Explorer indexes.
+### Makefile targets
 
-Once Explorer indexes have been created, you can browse the running application at [http://localhost:5000](http://localhost:5000).
+-   `make up`: Start the development environment.
+-   `make up-d`: Start the development environment in the background.
+-   `make build`: Build the development Docker image.
+-   `make docker-clean`: Stop and remove the Docker containers.
+-   `make test-docker`: Run the tests inside the Docker container.
+-   `make lint-docker`: Run the linter inside the Docker container.
+-   `make docker-shell`: Get a shell into the running `explorer` container.
 
-You can run tests with `make test-docker`.
+### VS Code Dev Container
 
-And you can run a single test in Docker using a command like this: `docker-compose --file docker-compose.yml run explorer pytest integration_tests/test_dataset_listing.py`
+This repository includes a [Dev Container](https://code.visualstudio.com/docs/remote/containers) configuration, which allows you to use a Docker container as a full-featured development environment.
 
+1.  **Install the [Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension in VS Code.**
+2.  **Open the repository in VS Code.**
+3.  **Click on the "Reopen in Container" button** that appears in the bottom right corner of the window.
 
-## Docker-compose for Development and running tests
-### Testing with app.config
-edit `.docker/settings_docker.py` and setup application config. Then `docker-compose -f docker-compose.yml -f docker-compose.override.yml up` to bring up explorer docker with database, explorer with settings
+VS Code will build the dev container and connect to it. You will have a terminal with access to all the development tools, and you can run and debug the application from within VS Code.
 
 
 ## STAC API Extensions

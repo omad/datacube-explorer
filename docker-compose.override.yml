@@ -3,14 +3,12 @@ services:
   explorer:
     build:
       context: .
-      args:
-        ENVIRONMENT: test
-    environment:
-      - PROMETHEUS_MULTIPROC_DIR=/dev/shm # Enable prometheus metrics
+      target: dev
+    image: ghcr.io/opendatacube/explorer:dev
     volumes:
-      - ./:/code
-      - ./.docker/.datacube_integration.conf:/root/.datacube_integration.conf
-      - ./.docker/settings_docker.py:/code/settings.env.py
-    command: flask run --host 0.0.0.0
-    ports:
-      - "5000:5000"
+      - .:/code
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+    tty: true
+    stdin_open: true
