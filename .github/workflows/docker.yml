@@ -12,7 +12,7 @@ on:
     types: [published]
 
 env:
-  IMAGE_NAME: opendatacube/explorer
+  IMAGE_NAME: omad/explorer
   REGISTRY: ghcr.io
 
 permissions: {}
