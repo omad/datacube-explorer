@@ -81,7 +81,7 @@ jobs:
   # for documentation on this docker maintained workflow.
   build:
     needs: prepare
-    uses: docker/github-builder/.github/workflows/build.yml@v1
+    uses: docker/github-builder/.github/workflows/build.yml@58cb9f5b71b1836d6f690c1e95effdeb9b98cb8a # v1.17.0
     permissions:
       contents: read      # fetch the repository content
       id-token: write     # sign attestations and cache entries via OIDC
@@ -96,6 +96,7 @@ jobs:
       meta-images: ${{ needs.prepare.outputs.meta-images }}
       meta-tags: ${{ needs.prepare.outputs.meta-tags }}
       set-meta-labels: true
+      sign: true
       meta-labels: |
         org.opencontainers.image.title=Datacube Explorer
         org.opencontainers.image.description=Web-based exploration of Open Data Cube collections
